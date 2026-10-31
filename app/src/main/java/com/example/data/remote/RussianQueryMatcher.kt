@@ -4,7 +4,7 @@ import java.util.Locale
 
 object RussianQueryMatcher {
 
-    private val russianLocale = Locale("ru", "RU")
+    private val russianLocale = Locale.forLanguageTag("ru-RU")
 
     private val commonEndings = listOf(
         "иями", "ями", "ами", "ого", "ему", "ому", "ыми", "ими",

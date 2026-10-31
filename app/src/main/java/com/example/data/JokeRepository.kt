@@ -56,7 +56,7 @@ class JokeRepository(
         if (cleanQuery.isNotEmpty() && page == 1) {
             jokeDao.upsertSearchHistory(
                 SearchHistoryEntity(
-                    normalizedQuery = cleanQuery.lowercase(Locale("ru", "RU")),
+                    normalizedQuery = cleanQuery.lowercase(Locale.forLanguageTag("ru-RU")),
                     displayQuery = cleanQuery,
                     resultsCount = finalJokes.size,
                     searchedAt = System.currentTimeMillis()
