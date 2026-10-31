@@ -1,0 +1,177 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Тип сборки APK'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - debug
+          - release
+          - both
+      run_tests:
+        description: 'Запускать модульные тесты перед сборкой'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    name: Сборка APK (АнекдотПоиск)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Клонирование репозитория
+        uses: actions/checkout@v4
+
+      - name: Установка JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Настройка Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Принятие лицензий Android SDK
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+
+      - name: Установка и кэширование Gradle 9.3.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Подготовка .env и debug.keystore для CI
+        run: |
+          if [ ! -f .env ] && [ -f .env.example ]; then
+            cp .env.example .env
+          fi
+
+          if [ ! -f debug.keystore ]; then
+            if [ -f debug.keystore.base64 ]; then
+              base64 --decode debug.keystore.base64 > debug.keystore
+            else
+              keytool -genkeypair -v \
+                -keystore debug.keystore \
+                -storepass android \
+                -alias androiddebugkey \
+                -keypass android \
+                -keyalg RSA \
+                -keysize 2048 \
+                -validity 10000 \
+                -dname "CN=Android Debug,O=Android,C=US"
+            fi
+          fi
+
+      - name: Запуск модульных тестов
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.run_tests == true }}
+        run: |
+          if [ -x ./gradlew ]; then
+            ./gradlew :app:testDebugUnitTest --no-daemon
+          else
+            gradle :app:testDebugUnitTest --no-daemon
+          fi
+
+      - name: Сборка Debug APK
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.build_type == 'debug' || inputs.build_type == 'both' }}
+        run: |
+          if [ -x ./gradlew ]; then
+            ./gradlew :app:assembleDebug --no-daemon
+          else
+            gradle :app:assembleDebug --no-daemon
+          fi
+
+      - name: Сборка подписанного Release APK
+        if: ${{ startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && (inputs.build_type == 'release' || inputs.build_type == 'both')) }}
+        env:
+          SECRET_KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
+          SECRET_STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          SECRET_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          KEYSTORE_FILE="$RUNNER_TEMP/release-upload-key.jks"
+          if [ -n "$SECRET_KEYSTORE_B64" ] && [ -n "$SECRET_STORE_PASSWORD" ] && [ -n "$SECRET_KEY_PASSWORD" ]; then
+            echo "Используется релизный ключ из GitHub Secrets..."
+            echo "$SECRET_KEYSTORE_B64" | base64 --decode > "$KEYSTORE_FILE"
+            export KEYSTORE_PATH="$KEYSTORE_FILE"
+            export STORE_PASSWORD="$SECRET_STORE_PASSWORD"
+            export KEY_PASSWORD="$SECRET_KEY_PASSWORD"
+          else
+            echo "GitHub Secrets для ключа не заданы — генерируется временный ключ подписи (alias: upload)..."
+            TEMP_PASS="anekdot_ci_release_2026"
+            keytool -genkeypair -v \
+              -keystore "$KEYSTORE_FILE" \
+              -storepass "$TEMP_PASS" \
+              -alias upload \
+              -keypass "$TEMP_PASS" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=AnekdotPoisk,O=AIStudio,C=RU"
+            export KEYSTORE_PATH="$KEYSTORE_FILE"
+            export STORE_PASSWORD="$TEMP_PASS"
+            export KEY_PASSWORD="$TEMP_PASS"
+          fi
+
+          if [ -x ./gradlew ]; then
+            ./gradlew :app:assembleRelease --no-daemon
+          else
+            gradle :app:assembleRelease --no-daemon
+          fi
+
+      - name: Публикация артефакта Debug APK
+        if: ${{ hashFiles('app/build/outputs/apk/debug/*.apk') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnekdotPoisk-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Публикация артефакта Release APK
+        if: ${{ hashFiles('app/build/outputs/apk/release/*.apk') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnekdotPoisk-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Отчёт о сборке в Summary
+        run: |
+          {
+            echo "## Сборка APK завершена успешно"
+            echo ""
+            if ls app/build/outputs/apk/debug/*.apk >/dev/null 2>&1; then
+              echo "- **Debug APK:** готов к скачиванию в разделе **Artifacts -> AnekdotPoisk-debug-apk**"
+            fi
+            if ls app/build/outputs/apk/release/*.apk >/dev/null 2>&1; then
+              echo "- **Release APK:** готов к скачиванию в разделе **Artifacts -> AnekdotPoisk-release-apk**"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Создание GitHub Release при отправке тега v*
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
