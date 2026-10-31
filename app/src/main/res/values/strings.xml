@@ -1,0 +1,55 @@
+<resources>
+    <string name="app_name">АнекдотПоиск</string>
+    <string name="app_subtitle">Живой поиск анекдотов по популярным сайтам Рунета</string>
+
+    <!-- Navigation -->
+    <string name="nav_search">Поиск</string>
+    <string name="nav_random">Случайные</string>
+    <string name="nav_history">История</string>
+
+    <!-- Search Screen -->
+    <string name="search_placeholder">Введите тему: Штирлиц, программист, кот…</string>
+    <string name="search_button">Найти</string>
+    <string name="clear_search_cd">Очистить поисковый запрос</string>
+    <string name="sources_section_title">Сайты-источники</string>
+    <string name="popular_topics_title">Популярные запросы</string>
+    <string name="load_more_button">Искать ещё (стр. %1$d)</string>
+    <string name="searching_sites_status">Опрашиваем сайты с анекдотами…</string>
+    <string name="results_count_format">Найдено анекдотов: %1$d</string>
+    <string name="empty_initial_title">Что сегодня поищем?</string>
+    <string name="empty_initial_subtitle">Введите любое слово или выберите популярную тему выше — приложение параллельно проверит Anekdot.ru, Nekdo.ru, Anekdoty.ru, Baneks.ru и РжуНеМогу.</string>
+    <string name="empty_no_results_title">По запросу «%1$s» ничего не нашлось</string>
+    <string name="empty_no_results_subtitle">Попробуйте более короткое слово (например, корень слова без окончаний) или включите все сайты-источники.</string>
+    <string name="error_network_title">Не удалось связаться с сайтами</string>
+    <string name="retry_button">Повторить запрос</string>
+
+    <!-- Random / Fresh Screen -->
+    <string name="random_header_title">Свежие и случайные</string>
+    <string name="random_header_subtitle">Прямая лента анекдотов с популярных юмористических порталов</string>
+    <string name="refresh_random_button">Новая порция</string>
+    <string name="filter_all_sources">Все сайты</string>
+
+    <!-- History & Cache Screen -->
+    <string name="history_header_title">Недавние запросы и кэш</string>
+    <string name="recent_queries_title">История поиска</string>
+    <string name="cached_jokes_title">Загруженные анекдоты (%1$d)</string>
+    <string name="clear_history_button">Очистить кэш</string>
+    <string name="empty_history_title">История пока пуста</string>
+    <string name="empty_history_subtitle">Все найденные по запросам анекдоты и недавние поисковые фразы автоматически сохраняются здесь для быстрого доступа.</string>
+
+    <!-- Joke Actions & Reader -->
+    <string name="action_copy">Копировать</string>
+    <string name="action_share">Поделиться</string>
+    <string name="action_open_site">На сайт</string>
+    <string name="copied_snackbar">Анекдот скопирован в буфер обмена</string>
+    <string name="share_chooser_title">Поделиться анекдотом</string>
+    <string name="reader_title">Режим чтения</string>
+    <string name="font_size_toggle">Крупный шрифт</string>
+    <string name="close_reader_cd">Закрыть окно чтения</string>
+    <string name="select_joke_pane_hint">Выберите анекдот слева для удобного чтения и отправки друзьям</string>
+
+    <!-- Accessibility -->
+    <string name="hero_banner_cd">Иллюстрация юмористического журнала</string>
+    <string name="search_illustration_cd">Иллюстрация поиска анекдотов</string>
+    <string name="toggle_theme_cd">Переключить тему оформления</string>
+</resources>
